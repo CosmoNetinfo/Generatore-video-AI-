@@ -1,0 +1,8 @@
+{
+  "name": "Robot Article Summarizer",
+  "description": "Transform your blog articles into engaging 30-second videos featuring a cartoon robot narrator.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
