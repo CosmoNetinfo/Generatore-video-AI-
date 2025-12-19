@@ -51,11 +51,12 @@ export const generateSpeech = async (script: string): Promise<string> => {
   return base64Audio;
 };
 
-// Generazione immagine statica del robot (Sostituisce il video per essere gratuito)
+// Generazione immagine statica del robot ottimizzata per TikTok (9:16)
+// Il prompt è ora specifico per il robot mostrato dall'utente
 export const generateRobotImage = async (headline: string): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  const imagePrompt = `A high-quality 3D Pixar-style cartoon robot with expressive blue glowing eyes, tech-themed background related to "${headline}", vibrant colors, soft studio lighting, 4K render.`;
+  const imagePrompt = `A high-quality 3D render of a specific friendly cartoon robot: it has a polished silver/grey metallic body with orange circular accents on its joints and ears. It has large, glowing, expressive cyan blue circular eyes. The robot is standing in a high-tech dark server room with racks of servers and glowing green and blue circuit patterns. The robot is holding a small, glowing, semi-transparent holographic screen. Cinematic lighting, vertical 9:16 aspect ratio, Pixar/Disney style, 8k resolution, highly detailed textures. The theme of the holographic screen is: ${headline}.`;
 
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash-image',
@@ -63,7 +64,7 @@ export const generateRobotImage = async (headline: string): Promise<string> => {
       parts: [{ text: imagePrompt }],
     },
     config: {
-      imageConfig: { aspectRatio: "16:9" }
+      imageConfig: { aspectRatio: "9:16" }
     }
   });
 
