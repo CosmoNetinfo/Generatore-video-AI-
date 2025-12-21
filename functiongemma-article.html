@@ -6,155 +6,6 @@
   <title>FunctionGemma: La Rivoluzione degli Small Language Models per l'AI Agentica On-Device</title>
   <meta name="description" content="Guida completa a FunctionGemma, il modello AI da 270M parametri per function calling on-device">
   <meta name="keywords" content="FunctionGemma, Google Gemma 3 270M, Function Calling AI, Small Language Models, Edge Computing AI, AI On-Device Android, Fine-tuning Unsloth, AI Agentic Systems, Hugging Face Transformers, Ollama Local LLM, Mobile Actions Dataset, LiteRT-LM Integration, AI Privacy-First, AI Open Source Linux">
-
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: #f5f5f5;
-      color: #333;
-    }
-
-    article {
-      background: white;
-      padding: 40px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    h1 {
-      color: #1a1a1a;
-      border-bottom: 3px solid #4285f4;
-      padding-bottom: 10px;
-      margin-bottom: 20px;
-    }
-
-    h2 {
-      color: #2c3e50;
-      margin-top: 30px;
-      border-left: 4px solid #4285f4;
-      padding-left: 15px;
-    }
-
-    h3 {
-      color: #34495e;
-      margin-top: 20px;
-    }
-
-    a {
-      color: #4285f4;
-      text-decoration: none;
-    }
-
-    a:hover {
-      text-decoration: underline;
-    }
-
-    ul, ol {
-      padding-left: 30px;
-    }
-
-    li {
-      margin: 10px 0;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 20px 0;
-    }
-
-    th, td {
-      border: 1px solid #ddd;
-      padding: 12px;
-      text-align: left;
-    }
-
-    th {
-      background-color: #4285f4;
-      color: white;
-    }
-
-    tr:nth-child(even) {
-      background-color: #f8f9fa;
-    }
-
-    /* Stile per i blocchi di codice collassabili */
-    details {
-      margin: 20px 0;
-      border: 1px solid #e0e0e0;
-      border-radius: 6px;
-      background-color: #f8f9fa;
-    }
-
-    summary {
-      padding: 15px;
-      cursor: pointer;
-      font-weight: 600;
-      background-color: #4285f4;
-      color: white;
-      border-radius: 6px;
-      user-select: none;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    summary:hover {
-      background-color: #3367d6;
-    }
-
-    summary::after {
-      content: '▼';
-      transition: transform 0.3s;
-    }
-
-    details[open] summary::after {
-      transform: rotate(-180deg);
-    }
-
-    pre {
-      background-color: #1e1e1e;
-      color: #d4d4d4;
-      padding: 20px;
-      border-radius: 4px;
-      overflow-x: auto;
-      margin: 0;
-      font-size: 14px;
-    }
-
-    code {
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    /* Scrollbar personalizzata per i blocchi di codice */
-    pre::-webkit-scrollbar {
-      height: 10px;
-    }
-
-    pre::-webkit-scrollbar-track {
-      background: #2d2d2d;
-      border-radius: 4px;
-    }
-
-    pre::-webkit-scrollbar-thumb {
-      background: #4285f4;
-      border-radius: 4px;
-    }
-
-    pre::-webkit-scrollbar-thumb:hover {
-      background: #3367d6;
-    }
-
-    strong {
-      color: #2c3e50;
-    }
-  </style>
 </head>
 <body>
   <article>
@@ -192,7 +43,7 @@
     <p>Ideale per chi deve integrare il modello in pipeline di produzione o script personalizzati. Richiede Python 3.10+.</p>
 
     <details>
-      <summary>📦 Installazione Ambiente Python</summary>
+      <summary>Installazione Ambiente Python</summary>
       <pre><code># Creazione ambiente isolato
 python -m venv functiongemma-env
 source functiongemma-env/bin/activate
@@ -207,7 +58,7 @@ huggingface-cli login</code></pre>
     <p>Ecco un esempio di implementazione per il function calling:</p>
 
     <details open>
-      <summary>🐍 Codice Python - Implementazione Function Calling</summary>
+      <summary>Codice Python - Implementazione Function Calling</summary>
       <pre><code>from transformers import AutoProcessor, AutoModelForCausalLM
 
 processor = AutoProcessor.from_pretrained("google/functiongemma-270m-it")
@@ -230,7 +81,7 @@ output = model.generate(**inputs, max_new_tokens=128)</code></pre>
     <p>Se preferite un server API locale compatibile con OpenAI, <a href="https://ollama.com/" target="_blank">Ollama</a> è la scelta migliore.</p>
 
     <details>
-      <summary>🚀 Installazione e Esecuzione Ollama</summary>
+      <summary>Installazione e Esecuzione Ollama</summary>
       <pre><code># Installazione Ollama
 curl -fsSL https://ollama.com/install.sh | sh
 
@@ -247,7 +98,7 @@ curl http://localhost:11434/api/generate -d '{
     <h2>Mobile AI: Portare FunctionGemma su Android e iOS</h2>
     <p>La vera potenza di un modello da 270M si esprime nel settore mobile. Google ha ottimizzato FunctionGemma per l'esecuzione tramite <a href="https://ai.google.dev/gemma/docs/integrations/mobile" target="_blank">LiteRT (precedentemente TensorFlow Lite)</a>.</p>
 
-    <table>
+    <table border="1">
       <thead>
         <tr>
           <th>Piattaforma</th>
