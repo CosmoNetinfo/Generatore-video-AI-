@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FunctionGemma: La Rivoluzione degli Small Language Models per l'AI Agentica On-Device</title>
+  <meta name="description" content="Guida completa a FunctionGemma, il modello AI da 270M parametri per function calling on-device">
+  <meta name="keywords" content="FunctionGemma, Google Gemma 3 270M, Function Calling AI, Small Language Models, Edge Computing AI, AI On-Device Android, Fine-tuning Unsloth, AI Agentic Systems, Hugging Face Transformers, Ollama Local LLM, Mobile Actions Dataset, LiteRT-LM Integration, AI Privacy-First, AI Open Source Linux">
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+
+    article {
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      color: #1a1a1a;
+      border-bottom: 3px solid #4285f4;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      color: #2c3e50;
+      margin-top: 30px;
+      border-left: 4px solid #4285f4;
+      padding-left: 15px;
+    }
+
+    h3 {
+      color: #34495e;
+      margin-top: 20px;
+    }
+
+    a {
+      color: #4285f4;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    ul, ol {
+      padding-left: 30px;
+    }
+
+    li {
+      margin: 10px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #4285f4;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f8f9fa;
+    }
+
+    /* Stile per i blocchi di codice collassabili */
+    details {
+      margin: 20px 0;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      background-color: #f8f9fa;
+    }
+
+    summary {
+      padding: 15px;
+      cursor: pointer;
+      font-weight: 600;
+      background-color: #4285f4;
+      color: white;
+      border-radius: 6px;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    summary:hover {
+      background-color: #3367d6;
+    }
+
+    summary::after {
+      content: '▼';
+      transition: transform 0.3s;
+    }
+
+    details[open] summary::after {
+      transform: rotate(-180deg);
+    }
+
+    pre {
+      background-color: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin: 0;
+      font-size: 14px;
+    }
+
+    code {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* Scrollbar personalizzata per i blocchi di codice */
+    pre::-webkit-scrollbar {
+      height: 10px;
+    }
+
+    pre::-webkit-scrollbar-track {
+      background: #2d2d2d;
+      border-radius: 4px;
+    }
+
+    pre::-webkit-scrollbar-thumb {
+      background: #4285f4;
+      border-radius: 4px;
+    }
+
+    pre::-webkit-scrollbar-thumb:hover {
+      background: #3367d6;
+    }
+
+    strong {
+      color: #2c3e50;
+    }
+  </style>
+</head>
+<body>
+  <article>
+    <h1>FunctionGemma: La Rivoluzione degli Small Language Models per l'AI Agentica On-Device</h1>
+    <p>L'evoluzione dell'intelligenza artificiale sta virando drasticamente dai modelli mastodontici residenti nel cloud verso soluzioni agili, specializzate e operanti direttamente sull'edge. In questo scenario si inserisce <strong>FunctionGemma</strong>, un modello linguistico specializzato rilasciato da Google e progettato esplicitamente per le capacità di <em>function calling</em> (chiamata di funzioni) e l'integrazione in sistemi agentici complessi. A differenza dei modelli generalisti ottimizzati per la conversazione, FunctionGemma è ingegnerizzato per l'azione: il suo scopo primario è tradurre l'intento in linguaggio naturale in chiamate API strutturate, precise ed eseguibili.</p>
+
+    <h2>Architettura Tecnica: Perché 270 Milioni di Parametri sono il "Sweet Spot"</h2>
+    <p>La particolarità tecnica di FunctionGemma risiede nella sua architettura estremamente leggera, basata sul framework <a href="https://ai.google.dev/gemma" target="_blank">Gemma 3</a>. Con soli <strong>270 milioni di parametri</strong>, questo Small Language Model (SLM) sfida il paradigma secondo cui "più grande è meglio".</p>
+
+    <h3>Specifiche Core del Modello</h3>
+    <ul>
+      <li><strong>Modello Base:</strong> Gemma 3 270M.</li>
+      <li><strong>Vocabolario:</strong> 256k token, ottimizzato per il multilinguismo e la sintassi del codice.</li>
+      <li><strong>Footprint di Memoria:</strong> Circa 550MB di RAM, rendendolo compatibile con Raspberry Pi e smartphone di fascia media.</li>
+      <li><strong>Target Hardware:</strong> NVIDIA Jetson, smartphone, architetture Apple Silicon e dispositivi IoT industriali.</li>
+    </ul>
+
+    <p>L'ampio vocabolario è fondamentale: permette una tokenizzazione efficiente non solo del testo, ma dei formati strutturati come <strong>JSON</strong>, essenziali per interfacciare l'AI con il software tradizionale senza errori di parsing.</p>
+
+    <h2>Il Ruolo Strategico del "Traffic Controller" nell'AI Distribuita</h2>
+    <p>In un'architettura enterprise, FunctionGemma non sostituisce i modelli più grandi come Gemini o Gemma 27B, ma funge da <strong>Router Intelligente</strong> (Traffic Controller) al primo livello di interazione.</p>
+
+    <p>Immaginiamo un ecosistema di Smart Home o un assistente aziendale:</p>
+    <ol>
+      <li><strong>Analisi Locale:</strong> La richiesta dell'utente viene processata on-device.</li>
+      <li><strong>Esecuzione Deterministica:</strong> Se l'intento è semplice (es. "Spegni il server in rack 4"), FunctionGemma genera la chiamata API locale istantaneamente.</li>
+      <li><strong>Offloading nel Cloud:</strong> Se la richiesta richiede un ragionamento astratto o una base di conoscenza globale, il modello instrada la richiesta verso un LLM più potente.</li>
+    </ol>
+    <p>Questo approccio ibrido garantisce <strong>bassa latenza</strong>, riduzione dei costi di inferenza cloud e, soprattutto, una <strong>privacy totale</strong> per le operazioni sensibili che non lasciano mai il dispositivo locale.</p>
+
+    <h2>Guida all'Installazione su Linux e Ambienti di Sviluppo</h2>
+    <p>Per gli sviluppatori che operano in ambienti Linux, l'integrazione di FunctionGemma è immediata grazie al supporto dei principali framework open source come <a href="https://huggingface.co/google/functiongemma-270m-it" target="_blank">Hugging Face Transformers</a> e Ollama.</p>
+
+    <h3>Metodo 1: Setup Professionale con Python e Transformers</h3>
+    <p>Ideale per chi deve integrare il modello in pipeline di produzione o script personalizzati. Richiede Python 3.10+.</p>
+
+    <details>
+      <summary>📦 Installazione Ambiente Python</summary>
+      <pre><code># Creazione ambiente isolato
+python -m venv functiongemma-env
+source functiongemma-env/bin/activate
+
+# Installazione librerie necessarie
+pip install torch transformers huggingface_hub
+
+# Login per accettazione licenza
+huggingface-cli login</code></pre>
+    </details>
+
+    <p>Ecco un esempio di implementazione per il function calling:</p>
+
+    <details open>
+      <summary>🐍 Codice Python - Implementazione Function Calling</summary>
+      <pre><code>from transformers import AutoProcessor, AutoModelForCausalLM
+
+processor = AutoProcessor.from_pretrained("google/functiongemma-270m-it")
+model = AutoModelForCausalLM.from_pretrained("google/functiongemma-270m-it", device_map="auto")
+
+tools = [{
+    "type": "function",
+    "function": {
+        "name": "get_weather",
+        "parameters": {"type": "object", "properties": {"city": {"type": "string"}}}
+    }
+}]
+
+messages = [{"role": "user", "content": "Che tempo fa a Milano?"}]
+inputs = processor.apply_chat_template(messages, tools=tools, add_generation_prompt=True, return_tensors="pt")
+output = model.generate(**inputs, max_new_tokens=128)</code></pre>
+    </details>
+
+    <h3>Metodo 2: Deploy Rapido con Ollama</h3>
+    <p>Se preferite un server API locale compatibile con OpenAI, <a href="https://ollama.com/" target="_blank">Ollama</a> è la scelta migliore.</p>
+
+    <details>
+      <summary>🚀 Installazione e Esecuzione Ollama</summary>
+      <pre><code># Installazione Ollama
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Esecuzione del modello
+ollama run functiongemma
+
+# Utilizzo via API
+curl http://localhost:11434/api/generate -d '{
+  "model": "functiongemma",
+  "prompt": "Call function to get weather in Rome"
+}'</code></pre>
+    </details>
+
+    <h2>Mobile AI: Portare FunctionGemma su Android e iOS</h2>
+    <p>La vera potenza di un modello da 270M si esprime nel settore mobile. Google ha ottimizzato FunctionGemma per l'esecuzione tramite <a href="https://ai.google.dev/gemma/docs/integrations/mobile" target="_blank">LiteRT (precedentemente TensorFlow Lite)</a>.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Piattaforma</th>
+          <th>Strumento di Deploy</th>
+          <th>Performance Stimata</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Android</strong></td>
+          <td>Google AI Edge Gallery / LiteRT-LM</td>
+          <td>~50-70 token/s (Pixel 8)</td>
+        </tr>
+        <tr>
+          <td><strong>iOS</strong></td>
+          <td>MLX Framework / Xcode Integration</td>
+          <td>~50 token/s (iPhone 15 Pro)</td>
+        </tr>
+        <tr>
+          <td><strong>Linux Edge</strong></td>
+          <td>Llama.cpp / Ollama</td>
+          <td>~125 token/s (Desktop/Server)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Workflow per Sviluppatori Android</h3>
+    <p>Per integrare azioni native (es. controllo torcia, calendario, WiFi), Google consiglia l'uso del dataset <strong>Mobile Actions</strong>. Il processo prevede:</p>
+    <ol>
+      <li>Fine-tuning del modello su <a href="https://colab.research.google.com/" target="_blank">Google Colab</a> utilizzando la libreria <strong>Unsloth</strong> per massimizzare l'efficienza.</li>
+      <li>Conversione del modello in formato <code>.litertlm</code>.</li>
+      <li>Integrazione nell'app tramite <a href="https://github.com/google-ai-edge/ai-edge-gallery" target="_blank">Google AI Edge Gallery</a>.</li>
+    </ol>
+
+    <h2>Ottimizzazione e Fine-Tuning: Da 58% a 85% di Accuratezza</h2>
+    <p>FunctionGemma non è un prodotto "out-of-the-box" universale, ma una base malleabile. I benchmark mostrano che la precisione nel function calling <em>zero-shot</em> è del 58%. Tuttavia, applicando un fine-tuning mirato con <a href="https://unsloth.ai/" target="_blank">Unsloth</a> sui dataset di dominio, l'accuratezza balza all'85%.</p>
+    <p>Questo significa che per applicazioni industriali o IoT specifiche, gli sviluppatori possono addestrare il modello a riconoscere comandi proprietari con una latenza quasi nulla, mantenendo l'intera operazione offline.</p>
+
+    <h2>Conclusione: Perché Scegliere FunctionGemma</h2>
+    <p>In un mercato dominato dalla corsa ai parametri, FunctionGemma rappresenta il trionfo della specializzazione. Offre agli sviluppatori la possibilità di creare agenti AI che siano veloci, privati e, soprattutto, capaci di interagire concretamente con il mondo digitale circostante. Che si tratti di un'app Android che gestisce i dati sanitari offline o di un nodo IoT in una smart factory, FunctionGemma è il motore silenzioso della prossima ondata di <strong>Intelligenza Artificiale Distribuita</strong>.</p>
+  </article>
+</body>
+</html>
