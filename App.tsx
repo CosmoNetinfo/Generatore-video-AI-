@@ -14,10 +14,9 @@ const App: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(false);
   
-  // Editor State
   const [activeFilter, setActiveFilter] = useState<VideoFilter>('none');
-  const [trimDuration, setTrimDuration] = useState<number>(30);
-  const [maxAudioDuration, setMaxAudioDuration] = useState<number>(30);
+  const [trimDuration, setTrimDuration] = useState<number>(34);
+  const [maxAudioDuration, setMaxAudioDuration] = useState<number>(34);
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
 
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -42,6 +41,12 @@ const App: React.FC = () => {
     }
   };
 
+  const copyText = (text: string) => {
+    navigator.clipboard.writeText(text);
+    // Simple alert for feedback
+    alert("Testo copiato!");
+  };
+
   const playResult = useCallback(async (isSilent = false) => {
     if (!audioBase64) return null;
     
@@ -59,10 +64,7 @@ const App: React.FC = () => {
       
       const destination = isSilent ? ctx.createMediaStreamDestination() : ctx.destination;
       
-      // Mute logic if user has selected mute (only for non-silent exports, 
-      // though silent exports are for the recorder so we handle that in the recorder logic)
       if (!isSilent && isAudioMuted) {
-          // If muted, we don't connect to destination or we use a gain node at 0
           const gainNode = ctx.createGain();
           gainNode.gain.value = 0;
           source.connect(gainNode);
@@ -82,7 +84,7 @@ const App: React.FC = () => {
       
       return { source, audioBuffer, destination: (destination as any).stream || null };
     } catch (err) {
-      console.error("Errore audio", err);
+      console.error("Errore audio:", err);
       return null;
     }
   }, [audioBase64, isAudioMuted]);
@@ -99,7 +101,7 @@ const App: React.FC = () => {
   const exportForTikTok = async () => {
     if (!imageUrl || !audioBase64 || !summary) return;
 
-    setStatus({ step: 'exporting', message: 'Rendering video...' });
+    setStatus({ step: 'exporting', message: 'Inizializzazione rendering...' });
 
     const canvas = document.createElement('canvas');
     canvas.width = 1080;
@@ -111,40 +113,44 @@ const App: React.FC = () => {
     img.crossOrigin = "anonymous";
     img.src = imageUrl;
 
-    await new Promise((resolve) => { img.onload = resolve; });
+    await new Promise((resolve, reject) => { 
+      img.onload = resolve;
+      img.onerror = () => reject(new Error("Impossibile caricare l'immagine del robot per l'esportazione"));
+    });
 
     const audioInfo = await playResult(true);
     if (!audioInfo) return;
 
     const stream = canvas.captureStream(30);
     
-    // Solo se non è mutato aggiungiamo la traccia audio
     if (!isAudioMuted && audioInfo.destination) {
-      stream.addTrack(audioInfo.destination.getAudioTracks()[0]);
+      const audioTrack = audioInfo.destination.getAudioTracks()[0];
+      if (audioTrack) stream.addTrack(audioTrack);
     }
 
-    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9,opus' });
+    const recorder = new MediaRecorder(stream, { 
+      mimeType: MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' : 'video/webm;codecs=vp9,opus' 
+    });
+    
     const chunks: Blob[] = [];
-
     recorder.ondataavailable = (e) => chunks.push(e.data);
     recorder.onstop = () => {
-      const blob = new Blob(chunks, { type: 'video/mp4' });
+      const blob = new Blob(chunks, { type: recorder.mimeType });
       const downloadUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = downloadUrl;
-      a.download = `cosmonet-${isAudioMuted ? 'muted-' : ''}${Date.now()}.mp4`;
+      a.download = `cosmonet-robot-${Date.now()}.mp4`;
       a.click();
-      setStatus({ step: 'complete', message: 'Video pronto!' });
+      setStatus({ step: 'complete', message: 'Video scaricato con successo!' });
     };
 
     recorder.start();
-
     const startTime = Date.now();
-    const duration = Math.min(audioInfo.audioBuffer.duration, trimDuration) * 1000;
+    const videoDurationMs = trimDuration * 1000;
 
-    const render = () => {
+    const renderFrame = () => {
       const elapsed = Date.now() - startTime;
-      if (elapsed > duration) {
+      if (elapsed > videoDurationMs) {
         recorder.stop();
         audioInfo.source.stop();
         return;
@@ -158,31 +164,35 @@ const App: React.FC = () => {
       ctx.restore();
 
       const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, 'rgba(0,0,0,0.3)');
+      gradient.addColorStop(0, 'rgba(0,0,0,0.4)');
       gradient.addColorStop(0.3, 'transparent');
       gradient.addColorStop(0.7, 'transparent');
-      gradient.addColorStop(1, 'rgba(0,0,0,0.6)');
+      gradient.addColorStop(1, 'rgba(0,0,0,0.7)');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       ctx.fillStyle = '#ffffff';
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = 'rgba(0,0,0,0.5)';
-      ctx.font = 'bold 50px Bungee, sans-serif';
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.font = 'bold 60px Bungee, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('COSMONET.INFO', canvas.width / 2, canvas.height - 150);
+      ctx.fillText('COSMONET.INFO', canvas.width / 2, canvas.height - 180);
 
-      requestAnimationFrame(render);
+      requestAnimationFrame(renderFrame);
     };
 
-    render();
+    setStatus({ step: 'exporting', message: 'Rendering in corso...' });
+    renderFrame();
   };
 
   const startGeneration = async () => {
-    if (!url.trim() || !url.startsWith('http')) {
-      alert("Inserisci un link valido di Cosmonet.info");
+    const trimmedUrl = url.trim();
+    if (!trimmedUrl) {
+      alert("Inserisci un link dell'articolo");
       return;
     }
+
+    const finalUrl = trimmedUrl.startsWith('http') ? trimmedUrl : `https://${trimmedUrl}`;
 
     try {
       setImageUrl(null);
@@ -190,202 +200,181 @@ const App: React.FC = () => {
       setSummary(null);
       setIsPlaying(false);
 
-      setStatus({ step: 'summarizing', message: 'Analisi articolo...' });
-      const summaryResult = await summarizeArticle(url);
+      setStatus({ step: 'summarizing', message: 'Analisi SEO e Hashtag...' });
+      const summaryResult = await summarizeArticle(finalUrl);
       setSummary(summaryResult);
 
-      setStatus({ step: 'generating_audio', message: 'Sintesi vocale...' });
+      setStatus({ step: 'generating_audio', message: 'Registrazione voce robotica...' });
       const audioResult = await generateSpeech(summaryResult.script);
       setAudioBase64(audioResult);
       
       const decoded = decodeBase64(audioResult);
       const tempCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
       const buffer = await decodeAudioData(decoded, tempCtx, 24000, 1);
-      setMaxAudioDuration(buffer.duration);
-      setTrimDuration(Math.min(30, buffer.duration));
+      
+      const bufferDuration = 4;
+      const totalDuration = buffer.duration + bufferDuration;
+      
+      setMaxAudioDuration(totalDuration);
+      setTrimDuration(totalDuration);
 
-      setStatus({ step: 'generating_image', message: 'Creazione Robot 9:16...' });
+      setStatus({ step: 'generating_image', message: 'Creazione avatar...' });
       const img = await generateRobotImage(summaryResult.headline);
       setImageUrl(img);
 
-      setStatus({ step: 'complete', message: 'Contenuto pronto!' });
+      setStatus({ step: 'complete', message: 'Analisi completata!' });
     } catch (err: any) {
       console.error(err);
-      setStatus({ step: 'error', message: err.message || 'Errore durante la generazione' });
+      setStatus({ step: 'error', message: "Errore: " + (err.message || "riprova più tardi.") });
     }
   };
 
   const formatTime = (seconds: number) => {
-    const s = Math.floor(seconds);
-    return `00:${s < 10 ? '0' : ''}${s}`;
+    const min = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${min < 10 ? '0' : ''}${min}:${s < 10 ? '0' : ''}${s}`;
   };
+
+  const isProcessing = ['summarizing', 'generating_audio', 'generating_image', 'exporting'].includes(status.step);
 
   if (!hasApiKey) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-slate-950">
         <div className="max-w-md w-full bg-slate-900 rounded-3xl p-8 border border-blue-500/20 shadow-2xl text-center">
-          <div className="text-7xl mb-6 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">🤖</div>
-          <h1 className="text-3xl font-robot mb-4 text-blue-400">Cosmonet Free Studio</h1>
-          <p className="text-slate-400 mb-8">Usa la tua chiave API gratuita di Google per creare video senza costi.</p>
-          <button onClick={handleSetupKey} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-500/20">Configura Chiave Gratuita</button>
+          <div className="text-7xl mb-6">🤖</div>
+          <h1 className="text-3xl font-robot mb-4 text-blue-400">Cosmonet Studio</h1>
+          <button onClick={handleSetupKey} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-all">Configura Studio</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-12">
+    <div className="max-w-7xl mx-auto px-4 py-12">
       <header className="text-center mb-12">
-        <div className="inline-flex items-center gap-2 bg-green-500/10 text-green-400 px-4 py-1 rounded-full text-xs font-bold mb-4 tracking-widest uppercase border border-green-500/20">
-          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-          Studio Creativo
-        </div>
-        <h1 className="text-5xl font-robot text-blue-400 mb-2 drop-shadow-md uppercase">Robot Creator</h1>
-        <p className="text-slate-400 text-lg">Personalizza e pubblica il tuo riassunto in pochi click.</p>
+        <h1 className="text-5xl font-robot text-blue-400 mb-2 drop-shadow-md">ROBOT CREATOR</h1>
+        <p className="text-slate-400 text-lg">Ottimizzato per SEO e Social Engagement.</p>
       </header>
 
-      <main className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        <section className="space-y-6">
+      <main className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        {/* Sinistra: Input e SEO Kit */}
+        <section className="lg:col-span-7 space-y-6">
           <div className="bg-slate-900 rounded-3xl p-8 border border-slate-800 shadow-xl">
-            <label className="block text-xs font-bold text-blue-500 uppercase tracking-widest mb-4">Link Cosmonet.info</label>
-            <input
-              type="url"
-              className="w-full bg-slate-950 text-slate-100 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-blue-500 outline-none border border-slate-800 transition-all mb-4"
-              placeholder="Incolla URL..."
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              disabled={status.step !== 'idle' && status.step !== 'complete' && status.step !== 'error'}
-            />
-            <button
-              onClick={startGeneration}
-              disabled={!url.trim() || (status.step !== 'idle' && status.step !== 'complete' && status.step !== 'error' && status.step !== 'exporting')}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-3"
-            >
-              {status.step === 'summarizing' || status.step === 'generating_audio' || status.step === 'generating_image' ? (
-                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-              ) : '✨ Crea Ora'}
-            </button>
-          </div>
-
-          {imageUrl && status.step === 'complete' && (
-            <div className="bg-slate-900 rounded-3xl p-8 border border-slate-800 shadow-xl space-y-8 animate-fade-in">
-              <h2 className="text-xs font-bold text-blue-500 uppercase tracking-[0.2em]">Editor Video</h2>
-              
-              {/* Filtri */}
-              <div>
-                <p className="text-slate-500 text-[10px] uppercase font-bold mb-4">Filtri Visuali</p>
-                <div className="grid grid-cols-4 gap-3">
-                  {(['none', 'cinematic', 'cyberpunk', 'noir'] as VideoFilter[]).map((f) => (
-                    <button
-                      key={f}
-                      onClick={() => setActiveFilter(f)}
-                      className={`py-3 rounded-xl text-[10px] font-bold uppercase transition-all border ${activeFilter === f ? 'bg-blue-600 border-blue-400 text-white' : 'bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-700'}`}
-                    >
-                      {f}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Audio Settings */}
-              <div className="flex items-center justify-between bg-slate-950 p-4 rounded-xl border border-slate-800">
-                <div>
-                  <p className="text-white text-xs font-bold uppercase tracking-widest">Audio Narratore</p>
-                  <p className="text-slate-500 text-[10px]">Attiva o disattiva la voce del robot</p>
-                </div>
-                <button 
-                  onClick={() => setIsAudioMuted(!isAudioMuted)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-[10px] transition-all ${isAudioMuted ? 'bg-red-500/20 text-red-400 border border-red-500/40' : 'bg-blue-500/20 text-blue-400 border border-blue-500/40'}`}
-                >
-                  {isAudioMuted ? '🔇 MUTO' : '🔊 ATTIVO'}
-                </button>
-              </div>
-
-              {/* Trimming */}
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <p className="text-slate-500 text-[10px] uppercase font-bold">Taglio Durata</p>
-                  <span className="text-blue-400 font-robot text-xs">{formatTime(trimDuration)}</span>
-                </div>
-                <input
-                  type="range"
-                  min="5"
-                  max={maxAudioDuration}
-                  step="0.5"
-                  value={trimDuration}
-                  onChange={(e) => setTrimDuration(parseFloat(e.target.value))}
-                  className="w-full accent-blue-600 bg-slate-950 rounded-lg appearance-none cursor-pointer h-2"
-                />
-                <div className="flex justify-between mt-2 text-[10px] text-slate-600 uppercase font-bold">
-                  <span>5s</span>
-                  <span>{formatTime(maxAudioDuration)}</span>
-                </div>
-              </div>
-
-              {/* Esporta */}
+            <label className="block text-xs font-bold text-blue-500 uppercase tracking-widest mb-4">Link Articolo</label>
+            <div className="flex flex-col gap-4">
+              <input
+                type="text"
+                className={`w-full bg-slate-950 text-slate-100 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-blue-500 outline-none border transition-all ${status.step === 'error' ? 'border-red-500' : 'border-slate-800'}`}
+                placeholder="cosmonet.info/tuo-articolo"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                disabled={isProcessing}
+              />
               <button
-                onClick={exportForTikTok}
-                className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-4 rounded-2xl shadow-xl shadow-blue-500/30 transition-all transform hover:scale-[1.02]"
+                onClick={startGeneration}
+                disabled={!url.trim() || isProcessing}
+                className={`w-full py-4 rounded-2xl font-bold transition-all shadow-lg flex items-center justify-center gap-3 ${isProcessing ? 'bg-slate-800 text-slate-500' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20'}`}
               >
-                <span>🎬</span>
-                <span>APPLICA E ESPORTA</span>
+                {isProcessing ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                    <span>{status.message}</span>
+                  </>
+                ) : '✨ Genera Kit Video & SEO'}
               </button>
             </div>
-          )}
+          </div>
 
           {summary && (
-            <div className="bg-slate-900/50 rounded-2xl p-6 border border-slate-800 animate-fade-in">
-              <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-1 rounded font-bold uppercase mb-4 inline-block">Script Narratore</span>
-              <p className="text-slate-300 italic text-sm leading-relaxed bg-slate-950 p-4 rounded-xl border border-slate-800">
-                "{summary.script}"
-              </p>
+            <div className="bg-slate-900/80 rounded-3xl p-8 border border-slate-800 shadow-2xl space-y-8 animate-fade-in">
+              <h2 className="text-xs font-bold text-blue-400 uppercase tracking-[0.2em]">Kit Social SEO</h2>
+              
+              <div className="space-y-6">
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-[10px] text-slate-500 font-bold uppercase">Titolo Suggerito</label>
+                    <button onClick={() => copyText(summary.seoTitle)} className="text-[10px] text-blue-400 hover:underline">Copia</button>
+                  </div>
+                  <p className="bg-slate-950 p-4 rounded-xl text-sm border border-slate-800 font-semibold">{summary.seoTitle}</p>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-[10px] text-slate-500 font-bold uppercase">Descrizione Ottimizzata</label>
+                    <button onClick={() => copyText(summary.seoDescription)} className="text-[10px] text-blue-400 hover:underline">Copia</button>
+                  </div>
+                  <p className="bg-slate-950 p-4 rounded-xl text-xs border border-slate-800 text-slate-300 leading-relaxed">{summary.seoDescription}</p>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-[10px] text-slate-500 font-bold uppercase">Hashtag Strategici</label>
+                    <button onClick={() => copyText(summary.seoHashtags)} className="text-[10px] text-blue-400 hover:underline">Copia</button>
+                  </div>
+                  <p className="bg-slate-950 p-4 rounded-xl text-sm border border-slate-800 text-blue-400 font-mono">{summary.seoHashtags}</p>
+                </div>
+
+                <div className="pt-4 border-t border-slate-800">
+                  <label className="text-[10px] text-slate-500 font-bold uppercase mb-2 block">Script Narrativo</label>
+                  <p className="text-slate-400 italic text-sm bg-slate-950/50 p-4 rounded-xl border border-slate-800/50 leading-relaxed">
+                    "{summary.script}"
+                  </p>
+                </div>
+              </div>
             </div>
           )}
         </section>
 
-        <section>
-          <div className="sticky top-12">
-            <div className="bg-slate-900 rounded-3xl overflow-hidden border border-slate-800 shadow-2xl aspect-[9/16] max-h-[75vh] mx-auto relative group flex items-center justify-center bg-black">
+        {/* Destra: Preview e Personalizzazione */}
+        <section className="lg:col-span-5">
+          <div className="sticky top-12 space-y-6">
+            <div className="bg-slate-900 rounded-[2.5rem] overflow-hidden border border-slate-800 shadow-2xl aspect-[9/16] max-h-[70vh] mx-auto relative group flex items-center justify-center bg-black">
               {imageUrl ? (
                 <div className="relative w-full h-full" style={{ filter: getFilterString(activeFilter) }}>
-                  <img src={imageUrl} alt="Robot Avatar" className={`w-full h-full object-cover transition-transform duration-700 ${isPlaying ? 'scale-105' : 'scale-100'}`} />
-                  <div className={`absolute inset-0 bg-blue-500/5 pointer-events-none transition-opacity ${isPlaying ? 'opacity-100 animate-pulse' : 'opacity-0'}`}></div>
-                  
-                  {/* Branding in anteprima */}
-                  <div className="absolute bottom-16 left-0 right-0 text-center" style={{ filter: 'none' }}>
-                    <p className="text-white font-robot text-sm tracking-widest drop-shadow-md">COSMONET.INFO</p>
+                  <img src={imageUrl} alt="Robot Avatar" className={`w-full h-full object-cover transition-transform duration-1000 ${isPlaying ? 'scale-105' : 'scale-100'}`} />
+                  <div className={`absolute inset-0 bg-blue-500/10 pointer-events-none transition-opacity ${isPlaying ? 'opacity-100 animate-pulse' : 'opacity-0'}`}></div>
+                  <div className="absolute bottom-16 left-0 right-0 text-center">
+                    <p className="text-white font-robot text-sm tracking-widest drop-shadow-lg">COSMONET.INFO</p>
                   </div>
-
-                  {/* Icona Mute in anteprima se attivo */}
-                  {isAudioMuted && (
-                    <div className="absolute top-6 right-6 bg-black/40 backdrop-blur-md p-2 rounded-full border border-white/10" style={{ filter: 'none' }}>
-                       <span className="text-white text-xs">🔇</span>
-                    </div>
-                  )}
                 </div>
               ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-700 p-8 text-center">
-                   <div className="text-8xl mb-6 opacity-5 animate-pulse">🤖</div>
-                   <p className="font-robot text-[10px] tracking-[0.2em] uppercase opacity-30">Anteprima Video</p>
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-800 p-8 text-center">
+                   <div className="text-8xl mb-6 opacity-10">📹</div>
+                   <p className="font-robot text-[10px] tracking-[0.2em] uppercase opacity-20">Preview Studio</p>
                 </div>
               )}
 
-              {(status.step !== 'idle' && status.step !== 'complete' && status.step !== 'error') && (
-                <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center z-20">
+              {isProcessing && (
+                <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center z-20 p-8 text-center">
                   <div className="w-16 h-16 border-4 border-blue-500/10 border-t-blue-500 rounded-full animate-spin"></div>
-                  <p className="text-blue-400 font-bold uppercase tracking-widest text-[10px] mt-6 animate-pulse">{status.message}</p>
+                  <p className="text-blue-400 font-bold uppercase tracking-widest text-[10px] mt-8 animate-pulse">{status.message}</p>
                 </div>
               )}
             </div>
 
-            {imageUrl && audioBase64 && status.step === 'complete' && (
-              <div className="mt-8 grid grid-cols-1 animate-slide-up">
+            {imageUrl && status.step === 'complete' && (
+              <div className="bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-xl space-y-6 animate-slide-up">
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => playResult()}
+                    className={`flex items-center justify-center gap-3 py-3 rounded-xl font-bold transition-all border ${isPlaying ? 'bg-red-600 border-red-400 text-white' : 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700'}`}
+                  >
+                    <span>{isPlaying ? '⏹️ Stop' : '🔊 Ascolta'}</span>
+                  </button>
+                  <button
+                    onClick={() => setIsAudioMuted(!isAudioMuted)}
+                    className={`flex items-center justify-center gap-3 py-3 rounded-xl font-bold transition-all border ${isAudioMuted ? 'bg-slate-950 text-slate-500 border-slate-800' : 'bg-blue-900/30 text-blue-400 border-blue-800'}`}
+                  >
+                    <span>{isAudioMuted ? 'Muto' : 'Audio On'}</span>
+                  </button>
+                </div>
+
                 <button
-                  onClick={() => playResult()}
-                  className={`flex items-center justify-center gap-3 py-4 rounded-2xl font-bold transition-all ${isPlaying ? 'bg-red-600 text-white shadow-lg shadow-red-500/20' : 'bg-slate-800 text-white border border-slate-700 hover:bg-slate-700'}`}
+                  onClick={exportForTikTok}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-4 rounded-xl shadow-xl shadow-blue-500/20 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-3"
                 >
-                  <span>{isPlaying ? '⏹️' : (isAudioMuted ? '🔇' : '🔊')}</span>
-                  <span>{isPlaying ? 'STOP' : (isAudioMuted ? 'TEST AUDIO (MUTO)' : 'ASCOLTA VOCE')}</span>
+                  <span>🎬</span>
+                  <span>ESPORTA VIDEO MP4</span>
                 </button>
               </div>
             )}
@@ -393,33 +382,15 @@ const App: React.FC = () => {
         </section>
       </main>
 
-      <footer className="mt-24 pt-8 border-t border-slate-900 text-center">
-        <p className="text-slate-600 text-[10px] tracking-[0.3em] font-robot uppercase">Cosmonet.info &copy; 2025</p>
+      <footer className="mt-24 pt-8 border-t border-slate-900 text-center text-slate-600 text-[10px] font-robot tracking-[0.4em] uppercase">
+        Cosmonet Artificial Intelligence &copy; 2025
       </footer>
 
       <style>{`
-        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slide-up { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fade-in 0.6s ease-out forwards; }
         .animate-slide-up { animation: slide-up 0.5s ease-out forwards; }
-        
-        input[type=range]::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          height: 20px;
-          width: 20px;
-          border-radius: 50%;
-          background: #3b82f6;
-          cursor: pointer;
-          box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
-          margin-top: -6px;
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-          width: 100%;
-          height: 8px;
-          cursor: pointer;
-          background: #1e293b;
-          border-radius: 4px;
-        }
       `}</style>
     </div>
   );
